@@ -21,6 +21,8 @@ import {
   startConnectionsConsumers,
 } from './domains/connections/index.js'
 import { ConnectionTrackingService } from './domains/connections/core/services/ConnectionTrackingService.js'
+import { OutboxPublisher } from './domains/posts/consumers/OutboxPublisher.js'
+import { PostEventsProducer } from './domains/posts/producers/PostEventsProducer.js'
 
 const PORT = Number(process.env.PORT) || 8000
 
@@ -82,6 +84,12 @@ app.use(
 
 await startPostsConsumers()
 await startConnectionsConsumers()
+
+const outboxPublisher = new OutboxPublisher(
+  container.resolve(PRISMA_CLIENT),
+  new PostEventsProducer(process.env.RABBITMQ_URL!),
+)
+outboxPublisher.start()
 
 httpServer.listen(PORT, () => {
   console.log(`HTTP/GraphQL server ready at http://localhost:${PORT}/graphql`)
